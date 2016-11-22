@@ -1040,7 +1040,7 @@ class ParserBase(object):
         self.as_recarray = kwds.get('as_recarray', False)
         self.tupleize_cols = kwds.get('tupleize_cols', False)
         self.mangle_dupe_cols = kwds.get('mangle_dupe_cols', '.')
-        if isinstance(self.mangle_dupe_cols,bool):
+        if isinstance(self.mangle_dupe_cols,bool) and self.mangle_dupe_cols:
           self.mangle_dupe_cols = '.'
         self.infer_datetime_format = kwds.pop('infer_datetime_format', False)
 
