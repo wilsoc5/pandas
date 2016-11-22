@@ -79,7 +79,7 @@ header : int or list of ints, default 'infer'
 names : array-like, default None
     List of column names to use. If file contains no header row, then you
     should explicitly pass header=None. Duplicates in this list are not
-    allowed unless mangle_dupe_cols=True, which is the default.
+    allowed unless mangle_dupe_cols evaluates True, which is the default.
 index_col : int or sequence or False, default None
     Column to use as the row labels of the DataFrame. If a sequence is given, a
     MultiIndex is used. If you have a malformed file with delimiters at the end
@@ -104,10 +104,10 @@ squeeze : boolean, default False
     If the parsed data only contains one column then return a Series
 prefix : str, default None
     Prefix to add to column numbers when no header, e.g. 'X' for X0, X1, ...
-mangle_dupe_cols : boolean, default True
+mangle_dupe_cols : string, default '.'
     Duplicate columns will be specified as 'X.0'...'X.N', rather than
-    'X'...'X'. Passing in False will cause data to be overwritten if there
-    are duplicate names in the columns.
+    'X'...'X'. Passing in a value that evaluates to False will cause data
+    to be overwritten if there are duplicate names in the columns.
 dtype : Type name or dict of column -> type, default None
     Data type for data or columns. E.g. {'a': np.float64, 'b': np.int32}
     (Unsupported with engine='python'). Use `str` or `object` to preserve and
@@ -442,7 +442,7 @@ _parser_defaults = {
     'encoding': None,
     'squeeze': False,
     'compression': None,
-    'mangle_dupe_cols': True,
+    'mangle_dupe_cols': '.',
     'tupleize_cols': False,
     'infer_datetime_format': False,
     'skip_blank_lines': True
@@ -501,7 +501,7 @@ def _make_parser_function(name, sep=','):
                  usecols=None,
                  squeeze=False,
                  prefix=None,
-                 mangle_dupe_cols=True,
+                 mangle_dupe_cols='.',
 
                  # General Parsing Configuration
                  dtype=None,
@@ -741,7 +741,7 @@ class TextFileReader(BaseIterator):
 
             # see gh-12935
             if argname == 'mangle_dupe_cols' and not value:
-                raise ValueError('Setting mangle_dupe_cols=False is '
+                raise ValueError('Having mangle_dupe_cols evaluate to False is '
                                  'not supported yet')
             else:
                 options[argname] = value
@@ -1039,7 +1039,9 @@ class ParserBase(object):
         self.false_values = kwds.get('false_values')
         self.as_recarray = kwds.get('as_recarray', False)
         self.tupleize_cols = kwds.get('tupleize_cols', False)
-        self.mangle_dupe_cols = kwds.get('mangle_dupe_cols', True)
+        self.mangle_dupe_cols = kwds.get('mangle_dupe_cols', '.')
+        if isinstance(self.mangle_dupe_cols,bool):
+          self.mangle_dupe_cols = '.'
         self.infer_datetime_format = kwds.pop('infer_datetime_format', False)
 
         self._date_conv = _make_date_converter(
@@ -1172,7 +1174,7 @@ class ParserBase(object):
                 cur_count = counts.get(col, 0)
 
                 if cur_count > 0:
-                    names[i] = '%s.%d' % (col, cur_count)
+                    names[i] = '%s%s%d' % (col, self.mangle_dupe_cols, cur_count)
 
                 counts[col] = cur_count + 1
 
@@ -2117,7 +2119,7 @@ class PythonParser(ParserBase):
                     for i, col in enumerate(this_columns):
                         cur_count = counts.get(col, 0)
                         if cur_count > 0:
-                            this_columns[i] = '%s.%d' % (col, cur_count)
+                            this_columns[i] = '%s%s%d' % (col, self.mangle_dupe_cols, cur_count)
                         counts[col] = cur_count + 1
                 elif have_mi_columns:
 

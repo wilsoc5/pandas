@@ -275,6 +275,12 @@ Klosterdruckerei\tKlosterdruckerei <Kempten> (1609-1805)\tHochfurstliche Buchhan
                              ['A', 'A.1', 'B', 'B.1', 'B.2'])
 
             df = getattr(self, method)(StringIO(data), sep=',',
+                                       mangle_dupe_cols='_')
+            self.assertEqual(list(df.columns),
+                             ['A', 'A_1', 'B', 'B_1', 'B_2'])
+
+            # Support legacy behavior
+            df = getattr(self, method)(StringIO(data), sep=',',
                                        mangle_dupe_cols=True)
             self.assertEqual(list(df.columns),
                              ['A', 'A.1', 'B', 'B.1', 'B.2'])
